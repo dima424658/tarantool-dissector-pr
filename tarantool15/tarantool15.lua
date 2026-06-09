@@ -3,7 +3,7 @@
 -- preference handling is at the end of this script file
 local default_settings =
 {
-    debug  = true,
+    debug        = true,
     enabled      = true, -- whether this dissector is enabled or not
     port         = 33013, -- default TCP port number
 }
@@ -411,6 +411,9 @@ end
 tarantool_proto.prefs.enabled     = Pref.bool("Dissector enabled", default_settings.enabled,
                                         "Whether the tarantool dissector is enabled or not")
 
+tarantool_proto.prefs.port        = Pref.uint("Port number", default_settings.port,
+                                        "The TCP port number for Tarantool")
+
 tarantool_proto.prefs.debug       = Pref.bool("Debug enabled", default_settings.debug,
                                         "The debug printing is enabled or not")
 
@@ -418,6 +421,8 @@ tarantool_proto.prefs.debug       = Pref.bool("Debug enabled", default_settings.
 -- the function for handling preferences being changed
 function tarantool_proto.prefs_changed()
     debug("prefs_changed called")
+
+    local need_reload = false
 
     default_settings.debug = tarantool_proto.prefs.debug
     resetDebugLevel()
@@ -429,8 +434,27 @@ function tarantool_proto.prefs_changed()
         else
             disableDissector()
         end
-        -- have to reload the capture file for this type of change
-        reload()
+
+        need_reload = true
     end
 
+    if default_settings.port ~= tarantool_proto.prefs.port then
+        -- remove old one, if not 0
+        if default_settings.port ~= 0 then
+            disableDissector()
+        end
+        -- set our new default
+        default_settings.port = tarantool_proto.prefs.port
+        -- add new one, if not 0
+        if default_settings.port ~= 0 then
+            enableDissector()
+        end
+
+        need_reload = true
+    end
+
+    -- have to reload the capture file for this type of change
+    if need_reload then
+        reload()
+    end
 end
