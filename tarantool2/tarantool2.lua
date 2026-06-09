@@ -177,6 +177,19 @@ local function parse_delete(tbl, buffer, subtree)
     subtree:add(buffer, descr)
 end
 
+local function parse_upsert(tbl, buffer, subtree)
+    local space_id = tbl[SPACE_ID]     -- int
+    local index_base = tbl[INDEX_BASE] -- int
+    local ops = tbl[OPS]               -- int
+    local tuple = tbl[TUPLE]           -- array
+
+    subtree:add(buffer, 'space_id: ' .. space_id)
+    local tuple_tree = subtree:add(buffer, 'tuple')
+    local tuple_str = table.concat(map(tuple, escape_call_arg), ', ')
+
+    tuple_tree:add(buffer, tuple_str)
+end
+
 local function parse_auth(tbl, buffer, subtree)
     local user_name = tbl[USER_NAME]     -- str
     local tuple = tbl[TUPLE]             -- array
@@ -348,7 +361,7 @@ local function code_to_command(code)
         [CALL_16] = {name = 'call_16', decoder = parser_not_implemented}, -- Deprecated.
         [AUTH]    = {name = 'auth', decoder = parse_auth},
         [EVAL]    = {name = 'eval', decoder = parse_eval},
-        [UPSERT]  = {name = 'upsert', decoder = parser_upsert},
+        [UPSERT]  = {name = 'upsert', decoder = parse_upsert},
         [EXECUTE] = {name = 'execute', decoder = parse_execute},
         [NOP]     = {name = 'nop', decoder = parse_nop},
         [PREPARE] = {name = 'prepare', decoder = parse_prepare},
